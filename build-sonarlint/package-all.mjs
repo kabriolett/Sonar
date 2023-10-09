@@ -9,7 +9,7 @@ import _default from './constants.mjs';
 const { TARGETED_PLATFORMS, LATEST_JRE } = _default;
 import downloadJre from './jreDownload.mjs';
 import { cleanJreDir } from './fsUtils.mjs';
-import { createVSIX } from 'vsce';
+import { createVSIX } from '@vscode/vsce';
 
 (async () => {
   for (const platform of TARGETED_PLATFORMS) {
