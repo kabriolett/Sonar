@@ -1,3 +1,7 @@
+## 3.23
+
+* Update Python analyzer 4.8 -> [4.9](https://sonarsource.atlassian.net/projects/SONARPY/versions/14308/tab/release-report-all-issues), 5 new rules for Pandas library
+
 ## 3.22
 
 * Add possibility to exclude files from analysis when ***not*** in Connected Mode. [Learn more](https://docs.sonarsource.com/sonarlint/vs-code/using-sonarlint/file-exclusions)
