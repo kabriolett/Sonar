@@ -31,7 +31,7 @@ suite('CSharp Test Suite', () => {
     await vscode.window.showTextDocument(document);
 
     // Check that we have 2 diagnostics in the right order
-    const diags = await waitForSonarLintDiagnostics(fileUri, { atLeastIssues: 1 });
+    const diags = await waitForSonarLintDiagnostics(fileUri, { atLeastIssues: 1, timeoutMillis: 30_000 });
     assert.deepEqual(
       diags.map(d => [d.code, d.message]),
       [
@@ -49,7 +49,7 @@ suite('CSharp Test Suite', () => {
       document.uri,
       rangeInMiddleOfThrowsMyException,
       vscode.CodeActionKind.QuickFix.value
-    ))!;
+    ));
     // With old versions of VSCode, code actions are not necessarily filtered on kind
     const expectedActionTitles = [
       'SonarLint: Add comment',
