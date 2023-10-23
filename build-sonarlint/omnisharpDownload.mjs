@@ -50,13 +50,26 @@ export async function downloadAndExtractOmnisharp(omnisharpVersion, omnisharpDis
     cwd: outputFolderPath // Set the current working directory for extraction
   });
   compressedReadStream.pipe(decompressionStream).pipe(extractionStream);
-  extractionStream.on('finish', () => {
-    info(`Successfully extracted OmniSharp ${omnisharpDistribution} into ${outputFolderPath}`);
-    deleteFile(inputFilePath);
+
+  return new Promise((resolve, reject) => {
+    extractionStream.on('finish', () => {
+      info(`Successfully extracted OmniSharp ${omnisharpDistribution} into ${outputFolderPath}`);
+      deleteFile(inputFilePath);
+      resolve();
+    });
+    compressedReadStream.on('error', err => {
+      error('Error reading compressed file:', err);
+      reject(err);
+    });
+    decompressionStream.on('error', err => {
+      error('Error decompressing:', err);
+      reject(err);
+    });
+    extractionStream.on('error', err => {
+      error('Error extracting:', err);
+      reject(err);
+    });
   });
-  compressedReadStream.on('error', err => error('Error reading compressed file:', err));
-  decompressionStream.on('error', err => error('Error decompressing:', err));
-  extractionStream.on('error', err => error('Error extracting:', err));
 }
 
 export async function downloadOmnisharpAllPlatformDistributions(omnisharpVersion) {
