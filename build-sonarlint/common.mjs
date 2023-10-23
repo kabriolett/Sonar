@@ -24,16 +24,20 @@ const { TARGETED_PLATFORMS, LATEST_JRE, OMNISHARP_VERSION } = _default;
 
 export async function deployUniversal() {
   commonPreBuildTasks();
-  await downloadOmnisharpAllPlatformDistributions(OMNISHARP_VERSION);
-  await createVSIX();
+  await buildUniversal();
   await commonPostBuildTasks();
 }
 
 export async function deployAll() {
   commonPreBuildTasks();
-  await createVSIX();
+  await buildUniversal();
   await buildTargeted();
   await commonPostBuildTasks();
+}
+
+async function buildUniversal() {
+  await downloadOmnisharpAllPlatformDistributions(OMNISHARP_VERSION);
+  await createVSIX();
 }
 
 async function buildTargeted() {
@@ -47,6 +51,7 @@ async function buildTargeted() {
 async function buildForPlatform(platform) {
   await downloadJre(platform, LATEST_JRE);
   await downloadAndExtractOmnisharp(OMNISHARP_VERSION, omnisharpPlatformMapping[platform]);
+  await downloadAndExtractOmnisharp(OMNISHARP_VERSION, 'net6');
   await createVSIX({ target: platform });
   cleanOmnisharpDir();
 }
