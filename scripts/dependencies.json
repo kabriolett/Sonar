@@ -2,68 +2,70 @@
   {
     "groupId": "org.sonarsource.sonarlint.ls",
     "artifactId": "sonarlint-language-server",
+
     "version": "2.20-SNAPSHOT",
+
     "output": "server/sonarlint-ls.jar"
   },
   {
     "groupId": "org.sonarsource.slang",
     "artifactId": "sonar-go-plugin",
-    "version": "1.13.0.4374",
+    "version": "1.15.0.4655",
     "output": "analyzers/sonargo.jar"
   },
   {
     "groupId": "org.sonarsource.javascript",
     "artifactId": "sonar-javascript-plugin",
-    "version": "10.3.1.21905",
+    "version": "10.6.0.22520",
     "output": "analyzers/sonarjs.jar"
   },
   {
     "groupId": "org.sonarsource.java",
     "artifactId": "sonar-java-plugin",
-    "version": "7.20.0.31692",
+    "version": "7.25.0.32245",
     "output": "analyzers/sonarjava.jar"
   },
   {
     "groupId": "org.sonarsource.php",
     "artifactId": "sonar-php-plugin",
-    "version": "3.30.0.9766",
+    "version": "3.32.0.10180",
     "output": "analyzers/sonarphp.jar"
   },
   {
     "groupId": "org.sonarsource.python",
     "artifactId": "sonar-python-plugin",
-    "version": "4.3.0.11660",
+    "version": "4.8.0.12420",
     "output": "analyzers/sonarpython.jar"
   },
   {
     "groupId": "org.sonarsource.html",
     "artifactId": "sonar-html-plugin",
-    "version": "3.7.1.3306",
+    "version": "3.9.0.3600",
     "output": "analyzers/sonarhtml.jar"
   },
   {
     "groupId": "org.sonarsource.xml",
     "artifactId": "sonar-xml-plugin",
-    "version": "2.8.1.4006",
+    "version": "2.10.0.4108",
     "output": "analyzers/sonarxml.jar"
   },
   {
     "groupId": "org.sonarsource.text",
     "artifactId": "sonar-text-plugin",
-    "version": "2.1.0.1163",
+    "version": "2.5.0.2293",
     "output": "analyzers/sonartext.jar"
   },
   {
     "groupId": "com.sonarsource.cpp",
     "artifactId": "sonar-cfamily-plugin",
-    "version": "6.45.0.62016",
+    "version": "6.49.0.62722",
     "output": "analyzers/sonarcfamily.jar",
     "requiresCredentials": true
   },
   {
     "groupId": "org.sonarsource.iac",
     "artifactId": "sonar-iac-plugin",
-    "version": "1.17.0.3976",
+    "version": "1.21.0.5999",
     "output": "analyzers/sonariac.jar"
   }
 ]

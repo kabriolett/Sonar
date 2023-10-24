@@ -10,6 +10,7 @@ import { LanguageClient } from 'vscode-languageclient/node';
 import { ServerMode } from '../java/java';
 import { code2ProtocolConverter } from '../util/uri';
 import * as protocol from './protocol';
+import { AnalysisFile } from './protocol';
 
 export class SonarLintExtendedLanguageClient extends LanguageClient {
   listAllRules(): Thenable<protocol.RulesResponse> {
@@ -34,12 +35,19 @@ export class SonarLintExtendedLanguageClient extends LanguageClient {
     return this.sendRequest(protocol.CheckConnection.type, { connectionId });
   }
 
+  checkNewConnection(token: string, serverOrOrganization: string, isSonarQube: boolean) {
+    const params = isSonarQube
+      ? { token, serverUrl: serverOrOrganization }
+      : { token, organization: serverOrOrganization };
+    return this.sendRequest(protocol.CheckConnection.type, params);
+  }
+
   getRemoteProjectNames(connectionId: string, projectKeys: Array<string>) {
     return this.sendRequest(protocol.GetRemoteProjectNames.type, { connectionId, projectKeys });
   }
 
-  onTokenUpdate() {
-    return this.sendNotification(protocol.OnTokenUpdate.type);
+  onTokenUpdate(connectionId: string, token: string) {
+    return this.sendNotification(protocol.OnTokenUpdate.type, { connectionId, token });
   }
 
   getRemoteProjectsForConnection(connectionId: string) {
@@ -75,11 +83,14 @@ export class SonarLintExtendedLanguageClient extends LanguageClient {
   }
 
   getFilePatternsForAnalysis(folderUri: string): Promise<protocol.GetFilePatternsForAnalysisResponse> {
-    return this.sendRequest(protocol.GetFilePatternsForAnalysis.type, { folderUri });
+    return this.sendRequest(protocol.GetFilePatternsForAnalysis.type, { uri: folderUri });
   }
 
-  getAllowedHotspotStatuses(hotspotKey: string, folderUri: string,
-                            fileUri: string): Promise<protocol.GetAllowedHotspotStatusesResponse> {
+  getAllowedHotspotStatuses(
+    hotspotKey: string,
+    folderUri: string,
+    fileUri: string
+  ): Promise<protocol.GetAllowedHotspotStatusesResponse> {
     return this.sendRequest(protocol.GetAllowedHotspotStatuses.type, { hotspotKey, folderUri, fileUri });
   }
 
@@ -87,14 +98,43 @@ export class SonarLintExtendedLanguageClient extends LanguageClient {
     return this.sendRequest(protocol.GetSuggestedBinding.type, { configScopeId, connectionId });
   }
 
-  changeIssueStatus(configurationScopeId: string, issueKey: string,
-                    newStatus: string, fileUri: string, isTaintIssue: boolean): Promise<void> {
-    return this.sendNotification(protocol.SetIssueStatus.type,
-      { configurationScopeId, issueKey, newStatus, fileUri, isTaintIssue });
+  changeIssueStatus(
+    configurationScopeId: string,
+    issueId: string,
+    newStatus: string,
+    fileUri: string,
+    comment: string,
+    isTaintIssue: boolean
+  ): Promise<void> {
+    return this.sendNotification(protocol.SetIssueStatus.type, {
+      configurationScopeId,
+      issueId,
+      newStatus,
+      fileUri,
+      comment,
+      isTaintIssue
+    });
   }
 
-  addIssueComment(configurationScopeId: string, issueKey: string, text: string): Promise<void>{
-    return this.sendNotification(protocol.AddIssueComment.type, {configurationScopeId, issueKey, text});
+  reopenResolvedLocalIssues(configurationScopeId: string, relativePath: string, fileUri: string): Promise<void> {
+    return this.sendNotification(protocol.ReopenResolvedLocalIssues.type, {
+      configurationScopeId,
+      relativePath,
+      fileUri
+    });
+  }
+
+  analyseOpenFileIgnoringExcludes(
+    textDocument?: AnalysisFile,
+    notebookDocument?: VSCode.NotebookDocument,
+    notebookCells?: AnalysisFile[]
+  ): Promise<void> {
+    return this.sendNotification(protocol.AnalyseOpenFileIgnoringExcludes.type, {
+      textDocument,
+      notebookUri: notebookDocument ? notebookDocument.uri.toString() : null,
+      notebookVersion: notebookDocument ? notebookDocument.version : null,
+      notebookCells
+    });
   }
 
   changeHotspotStatus(hotspotKey: string, newStatus: string, fileUri: string): Promise<void> {
@@ -102,7 +142,7 @@ export class SonarLintExtendedLanguageClient extends LanguageClient {
   }
 
   checkLocalHotspotsDetectionSupported(folderUri: string): Promise<protocol.CheckLocalDetectionSupportedResponse> {
-    return this.sendRequest(protocol.CheckLocalDetectionSupported.type, { folderUri });
+    return this.sendRequest(protocol.CheckLocalDetectionSupported.type, { uri: folderUri });
   }
 
   getHotspotDetails(ruleKey, hotspotId, fileUri): Promise<protocol.ShowRuleDescriptionParams> {

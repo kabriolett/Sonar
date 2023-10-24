@@ -82,6 +82,9 @@ export interface ShowRuleDescriptionParams {
   }>;
   type: string;
   severity: string;
+  cleanCodeAttribute?: string;
+  cleanCodeAttributeCategory?: string;
+  impacts?: { [softwareQuality: string]: string };
   languageKey: string;
   isTaint: boolean;
   parameters?: Array<{
@@ -101,10 +104,6 @@ export namespace ScmCheckRequest {
 
 export namespace ShowNotificationForFirstSecretsIssueNotification {
   export const type = new lsp.NotificationType('sonarlint/showNotificationForFirstSecretsIssue');
-}
-
-export namespace ShowNotificationForFirstCobolIssueNotification {
-  export const type = new lsp.NotificationType('sonarlint/showNotificationForFirstCobolIssue');
 }
 
 export interface GetJavaConfigResponse {
@@ -181,6 +180,10 @@ export namespace ShowHotspotNotification {
   export const type = new lsp.NotificationType<RemoteHotspot>('sonarlint/showHotspot');
 }
 
+export namespace ShowIssueNotification {
+  export const type = new lsp.NotificationType<Issue>('sonarlint/showIssue');
+}
+
 export interface TextRange {
   startLine: number;
   endLine?: number;
@@ -204,12 +207,12 @@ export interface Flow {
 export interface Issue {
   fileUri: string;
   message: string;
-  severity: string;
   ruleKey: string;
   connectionId?: string;
   creationDate?: string;
   flows: Flow[];
   textRange: TextRange;
+  codeMatches?: boolean;
 }
 
 export namespace ShowIssueOrHotspotNotification {
@@ -233,8 +236,21 @@ export namespace NeedCompilationDatabaseRequest {
   export const type = new lsp.NotificationType('sonarlint/needCompilationDatabase');
 }
 
-export namespace EditorOpenCheck {
-  export const type = new lsp.RequestType<string, boolean, void>('sonarlint/isOpenInEditor');
+export interface ShouldAnalyseFileCheckResult {
+  shouldBeAnalysed: boolean;
+  reason?: string;
+}
+
+export namespace ShouldAnalyseFileCheck {
+  export const type = new lsp.RequestType<UriParams, ShouldAnalyseFileCheckResult, void>('sonarlint/shouldAnalyseFile');
+}
+
+export interface FileUris {
+  fileUris: string[];
+}
+
+export namespace FilterOutExcludedFiles {
+  export const type = new lsp.RequestType<FileUris, FileUris, void>('sonarlint/filterOutExcludedFiles');
 }
 
 export interface ConnectionCheckResult {
@@ -244,7 +260,10 @@ export interface ConnectionCheckResult {
 }
 
 export interface ConnectionCheckParams {
-  connectionId: string;
+  connectionId?: string;
+  token?: string;
+  organization?: string;
+  serverUrl?: string;
 }
 
 export namespace ReportConnectionCheckResult {
@@ -270,7 +289,7 @@ export interface CheckLocalDetectionSupportedResponse {
 }
 
 export namespace CheckLocalDetectionSupported {
-  export const type = new lsp.RequestType<FolderUriParams, CheckLocalDetectionSupportedResponse, null>(
+  export const type = new lsp.RequestType<UriParams, CheckLocalDetectionSupportedResponse, null>(
     'sonarlint/checkLocalDetectionSupported'
   );
 }
@@ -333,8 +352,13 @@ export namespace GetTokenForServer {
   export const type = new lsp.RequestType<string, string, void>('sonarlint/getTokenForServer');
 }
 
+export interface TokenUpdateNotificationParams {
+  connectionId: string;
+  token: string;
+}
+
 export namespace OnTokenUpdate {
-  export const type = new lsp.NotificationType<void>('sonarlint/onTokenUpdate');
+  export const type = new lsp.NotificationType<TokenUpdateNotificationParams>('sonarlint/onTokenUpdate');
 }
 
 export interface GetRemoteProjectsForConnectionParams {
@@ -368,11 +392,6 @@ export interface GenerateTokenResponse {
 
 export namespace GenerateToken {
   export const type = new lsp.RequestType<GenerateTokenParams, GenerateTokenResponse, null>('sonarlint/generateToken');
-}
-
-export interface Range {
-  line: number;
-  character: number;
 }
 
 export interface Diagnostic extends lsp.Diagnostic {
@@ -430,8 +449,8 @@ export namespace ForgetFolderHotspots {
   export const type = new lsp.NotificationType('sonarlint/forgetFolderHotspots');
 }
 
-export interface FolderUriParams {
-  folderUri: string;
+export interface UriParams {
+  uri: string;
 }
 
 export interface GetFilePatternsForAnalysisResponse {
@@ -439,7 +458,7 @@ export interface GetFilePatternsForAnalysisResponse {
 }
 
 export namespace GetFilePatternsForAnalysis {
-  export const type = new lsp.RequestType<FolderUriParams, GetFilePatternsForAnalysisResponse, null>(
+  export const type = new lsp.RequestType<UriParams, GetFilePatternsForAnalysisResponse, null>(
     'sonarlint/listSupportedFilePatterns'
   );
 }
@@ -461,14 +480,14 @@ export namespace GetSuggestedBinding {
   );
 }
 
-export namespace AddIssueComment {
-  export const type = new lsp.NotificationType<AddIssueCommentParams>('sonarlint/addIssueComment');
+export namespace ReopenResolvedLocalIssues {
+  export const type = new lsp.NotificationType<ReopenAllIssuesForFileParams>('sonarlint/reopenResolvedLocalIssues');
 }
 
-export interface AddIssueCommentParams {
+export interface ReopenAllIssuesForFileParams {
   configurationScopeId: string;
-  issueKey: string;
-  text: string;
+  relativePath: string;
+  fileUri: string;
 }
 
 export namespace SetIssueStatus {
@@ -477,9 +496,10 @@ export namespace SetIssueStatus {
 
 export interface SetIssueStatusParams {
   configurationScopeId: string;
-  issueKey: string;
+  issueId: string;
   newStatus: string;
   fileUri: string;
+  comment: string;
   isTaintIssue: boolean;
 }
 
@@ -536,4 +556,55 @@ export interface SetHotspotStatusParams {
 export namespace SetHotspotStatus {
   export const type = new lsp.NotificationType<SetHotspotStatusParams>('sonarlint/changeHotspotStatus');
 }
+
+export interface SslCertificateConfirmationParams {
+  issuedTo: string;
+  issuedBy: string;
+  validFrom: string;
+  validTo: string;
+  sha1Fingerprint: string;
+  sha256Fingerprint: string;
+  truststorePath: string;
+}
+
+export namespace SslCertificateConfirmation {
+  export const type = new lsp.RequestType<SslCertificateConfirmationParams, boolean, void>(
+    'sonarlint/askSslCertificateConfirmation'
+  );
+}
+
+export interface AnalyseOpenFileIgnoringExcludesParams {
+  textDocument?: AnalysisFile;
+  notebookUri?: string;
+  notebookVersion?: number;
+  notebookCells?: AnalysisFile[];
+}
+
+export namespace AnalyseOpenFileIgnoringExcludes {
+  export const type = new lsp.NotificationType<AnalyseOpenFileIgnoringExcludesParams>(
+    'sonarlint/analyseOpenFileIgnoringExcludes'
+  );
+}
+
+export interface ShowSoonUnsupportedVersionMessageParams {
+  doNotShowAgainId: string;
+  text: string;
+}
+
+export namespace ShowSoonUnsupportedVersionMessage {
+  export const type = new lsp.NotificationType<ShowSoonUnsupportedVersionMessageParams>(
+    'sonarlint/showSoonUnsupportedVersionMessage'
+  );
+}
+
+export interface SubmitNewCodeDefinitionParams {
+  folderUri: string;
+  newCodeDefinitionOrMessage: string;
+  isSupported: boolean;
+}
+
+export namespace SubmitNewCodeDefinition {
+  export const type = new lsp.NotificationType<SubmitNewCodeDefinitionParams>('sonarlint/submitNewCodeDefinition');
+}
+
 //#endregion

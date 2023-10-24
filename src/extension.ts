@@ -9,18 +9,18 @@ import * as ChildProcess from 'child_process';
 import { DateTime } from 'luxon';
 import * as Path from 'path';
 import * as VSCode from 'vscode';
+import { StatusBarAlignment } from 'vscode';
 import { LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node';
 import { configureCompilationDatabase, notifyMissingCompileCommands } from './cfamily/cfamily';
 import { AutoBindingService } from './connected/autobinding';
-import { BindingService } from './connected/binding';
+import { BindingService, showSoonUnsupportedVersionMessage } from './connected/binding';
 import { AllConnectionsTreeDataProvider } from './connected/connections';
 import {
   assistCreatingConnection,
   connectToSonarCloud,
   connectToSonarQube,
   editSonarCloudConnection,
-  editSonarQubeConnection,
-  reportConnectionCheckResult
+  editSonarQubeConnection
 } from './connected/connectionsetup';
 import {
   getHelpAndFeedbackItemById,
@@ -28,18 +28,18 @@ import {
   HelpAndFeedbackTreeDataProvider
 } from './help/helpAndFeedbackTreeDataProvider';
 import {
-  HOTSPOTS_VIEW_ID,
+  changeHotspotStatus,
   getFilesForHotspotsAndLaunchScan,
   hideSecurityHotspot,
+  HOTSPOTS_VIEW_ID,
   showHotspotDescription,
-  showSecurityHotspot,
-  useProvidedFolderOrPickManuallyAndScan,
   showHotspotDetails,
-  changeHotspotStatus
+  showSecurityHotspot,
+  useProvidedFolderOrPickManuallyAndScan
 } from './hotspot/hotspots';
 import { AllHotspotsTreeDataProvider, HotspotNode, HotspotTreeViewItem } from './hotspot/hotspotsTreeDataProvider';
 import { getJavaConfig, installClasspathListener } from './java/java';
-import { LocationTreeItem, SecondaryLocationsTree, navigateToLocation } from './location/locations';
+import { LocationTreeItem, navigateToLocation, SecondaryLocationsTree } from './location/locations';
 import { SonarLintExtendedLanguageClient } from './lsp/client';
 import * as protocol from './lsp/protocol';
 import { languageServerCommand } from './lsp/server';
@@ -49,6 +49,7 @@ import { initScm, isIgnoredByScm } from './scm/scm';
 import { isFirstSecretDetected, showNotificationForFirstSecretsIssue } from './secrets/secrets';
 import { ConnectionSettingsService, migrateConnectedModeSettings } from './settings/connectionsettings';
 import {
+  enableVerboseLogs,
   getCurrentConfiguration,
   getSonarLintConfiguration,
   isVerboseEnabled,
@@ -58,12 +59,15 @@ import {
 import { Commands } from './util/commands';
 import { getLogOutput, initLogOutput, logToSonarLintOutput, showLogOutput } from './util/logging';
 import { getPlatform } from './util/platform';
-import { JAVA_HOME_CONFIG, installManagedJre, resolveRequirements } from './util/requirements';
+import { installManagedJre, JAVA_HOME_CONFIG, resolveRequirements } from './util/requirements';
 import { code2ProtocolConverter, protocol2CodeConverter } from './util/uri';
 import * as util from './util/util';
+import { filterOutFilesIgnoredForAnalysis, shouldAnalyseFile } from './util/util';
 import { resolveIssueMultiStepInput } from './issue/resolveIssue';
 import { IssueService } from './issue/issue';
-import { isFirstCobolIssueDetected, showNotificationForFirstCobolIssue } from './util/cobolUtils';
+import { showSslCertificateConfirmationDialog } from './util/showMessage';
+import { NewCodeDefinitionService } from './newcode/newCodeDefinitionService';
+import { ShowIssueNotification } from './lsp/protocol';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -200,7 +204,6 @@ export async function activate(context: VSCode.ExtensionContext) {
         productVersion: util.packageJson.version,
         workspaceName: VSCode.workspace.name,
         firstSecretDetected: isFirstSecretDetected(context),
-        firstCobolIssueDetected: isFirstCobolIssueDetected(context),
         showVerboseLogs: VSCode.workspace.getConfiguration().get('sonarlint.output.showVerboseLogs', false),
         platform: getPlatform(),
         architecture: process.arch,
@@ -210,7 +213,7 @@ export async function activate(context: VSCode.ExtensionContext) {
             uiKind: VSCode.UIKind[VSCode.env.uiKind],
             installTime,
             isTelemetryEnabled: VSCode.env.isTelemetryEnabled,
-            ...VSCode.env.isTelemetryEnabled && { machineId: VSCode.env.machineId }
+            ...(VSCode.env.isTelemetryEnabled && { machineId: VSCode.env.machineId })
           }
         },
         enableNotebooks: true
@@ -233,15 +236,15 @@ export async function activate(context: VSCode.ExtensionContext) {
 
   ConnectionSettingsService.init(context, languageClient);
   BindingService.init(languageClient, context.workspaceState, ConnectionSettingsService.instance);
-  IssueService.init(languageClient);
   AutoBindingService.init(BindingService.instance, context.workspaceState, ConnectionSettingsService.instance);
+  NewCodeDefinitionService.init(context);
   migrateConnectedModeSettings(getCurrentConfiguration(), ConnectionSettingsService.instance).catch(e => {
     /* ignored */
   });
 
   installCustomRequestHandlers(context);
 
-  const referenceBranchStatusItem = VSCode.window.createStatusBarItem();
+  const referenceBranchStatusItem = VSCode.window.createStatusBarItem(StatusBarAlignment.Left, 1);
   const scm = await initScm(languageClient, referenceBranchStatusItem);
   context.subscriptions.push(scm);
   context.subscriptions.push(
@@ -255,7 +258,10 @@ export async function activate(context: VSCode.ExtensionContext) {
     })
   );
   context.subscriptions.push(referenceBranchStatusItem);
-  VSCode.window.onDidChangeActiveTextEditor(e => scm.updateReferenceBranchStatusItem(e));
+  VSCode.window.onDidChangeActiveTextEditor(e => {
+    scm.updateReferenceBranchStatusItem(e);
+    NewCodeDefinitionService.instance.updateNewCodeStatusBarItem(e);
+  });
 
   allRulesTreeDataProvider = new AllRulesTreeDataProvider(() => languageClient.listAllRules());
   allRulesView = VSCode.window.createTreeView('SonarLint.AllRules', {
@@ -269,12 +275,19 @@ export async function activate(context: VSCode.ExtensionContext) {
   });
   context.subscriptions.push(issueLocationsView);
 
+  IssueService.init(languageClient, secondaryLocationsTree, issueLocationsView);
+
+  context.subscriptions.push(languageClient.onNotification(ShowIssueNotification.type, IssueService.showIssue));
+
   VSCode.workspace.onDidChangeConfiguration(async event => {
     if (event.affectsConfiguration('sonarlint.rules')) {
       allRulesTreeDataProvider.refresh();
     }
     if (event.affectsConfiguration('sonarlint.connectedMode')) {
       allConnectionsTreeDataProvider.refresh();
+    }
+    if (event.affectsConfiguration('sonarlint.focusOnNewCode')) {
+      NewCodeDefinitionService.instance.updateFocusOnNewCodeState();
     }
   });
 
@@ -338,6 +351,13 @@ function suggestBinding(params: protocol.SuggestBindingParams) {
 }
 
 function registerCommands(context: VSCode.ExtensionContext) {
+  context.subscriptions.push(
+    VSCode.commands.registerCommand('SonarLint.OpenSample', async () => {
+      const sampleFileUri = VSCode.Uri.joinPath(context.extensionUri, 'walkthrough', 'sample.py');
+      const sampleDocument = await VSCode.workspace.openTextDocument(sampleFileUri);
+      await VSCode.window.showTextDocument(sampleDocument, VSCode.ViewColumn.Beside);
+    })
+  );
   context.subscriptions.push(VSCode.commands.registerCommand(Commands.SHOW_ALL_LOCATIONS, showAllLocations));
   context.subscriptions.push(VSCode.commands.registerCommand(Commands.CLEAR_LOCATIONS, clearLocations));
   context.subscriptions.push(VSCode.commands.registerCommand(Commands.NAVIGATE_TO_LOCATION, navigateToLocation));
@@ -453,6 +473,11 @@ function registerCommands(context: VSCode.ExtensionContext) {
     )
   );
   context.subscriptions.push(
+    VSCode.commands.registerCommand(Commands.REOPEN_LOCAL_ISSUES, () => {
+      IssueService.instance.reopenLocalIssues();
+    })
+  );
+  context.subscriptions.push(
     VSCode.commands.registerCommand(Commands.REMOVE_CONNECTION, async connection => {
       const connectionDeleted = await ConnectionSettingsService.instance.removeConnection(connection);
       if (connectionDeleted) {
@@ -502,6 +527,13 @@ function registerCommands(context: VSCode.ExtensionContext) {
   context.subscriptions.push(
     VSCode.commands.registerCommand(Commands.FORGET_FOLDER_HOTSPOTS, () => languageClient.forgetFolderHotspots())
   );
+
+  context.subscriptions.push(VSCode.commands.registerCommand(Commands.ENABLE_VERBOSE_LOGS, () => enableVerboseLogs()));
+  context.subscriptions.push(
+    VSCode.commands.registerCommand(Commands.ANALYSE_OPEN_FILE, () =>
+      IssueService.instance.analyseOpenFileIgnoringExcludes()
+    )
+  );
 }
 
 async function scanFolderForHotspotsCommandHandler(folderUri: VSCode.Uri) {
@@ -523,16 +555,16 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
 
   languageClient.onRequest(protocol.GetJavaConfigRequest.type, fileUri => getJavaConfig(languageClient, fileUri));
   languageClient.onRequest(protocol.ScmCheckRequest.type, fileUri => isIgnoredByScm(fileUri));
-  languageClient.onRequest(protocol.EditorOpenCheck.type, fileUri => isOpenInEditor(fileUri));
-  languageClient.onNotification(protocol.ReportConnectionCheckResult.type, async checkResult => {
-    await reportConnectionCheckResult(checkResult);
+  languageClient.onRequest(protocol.ShouldAnalyseFileCheck.type, params => shouldAnalyseFile(params.uri));
+  languageClient.onRequest(protocol.FilterOutExcludedFiles.type, params =>
+    filterOutFilesIgnoredForAnalysis(params.fileUris)
+  );
+  languageClient.onNotification(protocol.ReportConnectionCheckResult.type, checkResult => {
+    ConnectionSettingsService.instance.reportConnectionCheckResult(checkResult);
     allConnectionsTreeDataProvider.reportConnectionCheckResult(checkResult);
   });
   languageClient.onNotification(protocol.ShowNotificationForFirstSecretsIssueNotification.type, () =>
     showNotificationForFirstSecretsIssue(context)
-  );
-  languageClient.onNotification(protocol.ShowNotificationForFirstCobolIssueNotification.type, () =>
-    showNotificationForFirstCobolIssue(context)
   );
   languageClient.onNotification(protocol.ShowSonarLintOutputNotification.type, () =>
     VSCode.commands.executeCommand(Commands.SHOW_SONARLINT_OUTPUT)
@@ -565,6 +597,15 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
     protocol.AssistBinding.type,
     async params => await BindingService.instance.assistBinding(params)
   );
+  languageClient.onRequest(protocol.SslCertificateConfirmation.type, cert =>
+    showSslCertificateConfirmationDialog(cert)
+  );
+  languageClient.onNotification(protocol.ShowSoonUnsupportedVersionMessage.type, params =>
+    showSoonUnsupportedVersionMessage(params, context.workspaceState)
+  );
+  languageClient.onNotification(protocol.SubmitNewCodeDefinition.type, newCodeDefinitionForFolderUri => {
+    NewCodeDefinitionService.instance.updateNewCodeDefinitionForFolderUri(newCodeDefinitionForFolderUri);
+  });
 }
 
 function updateSonarLintViewContainerBadge() {
@@ -580,13 +621,6 @@ function updateSonarLintViewContainerBadge() {
 
 async function getTokenForServer(serverId: string): Promise<string> {
   return ConnectionSettingsService.instance.getServerToken(serverId);
-}
-
-function isOpenInEditor(fileUri: string) {
-  const codeFileUri = VSCode.Uri.parse(fileUri).toString(false);
-  const textDocumentIsOpen = VSCode.workspace.textDocuments.some(d => d.uri.toString(false) === codeFileUri);
-  const notebookDocumentIsOpen = VSCode.workspace.notebookDocuments.some(d => d.uri.toString(false) === codeFileUri);
-  return textDocumentIsOpen || notebookDocumentIsOpen;
 }
 
 async function showAllLocations(issue: protocol.Issue) {

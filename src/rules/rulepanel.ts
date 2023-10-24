@@ -6,7 +6,9 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
+import { capitalize } from 'lodash';
 import * as VSCode from 'vscode';
+import { SonarLintDocumentation } from '../commons';
 import { ShowRuleDescriptionParams } from '../lsp/protocol';
 import * as util from '../util/util';
 import { clean, escapeHtml, ResourceResolver } from '../util/webview';
@@ -53,8 +55,6 @@ function computeRuleDescPanelContent(
   const styleSrc = resolver.resolve('styles', 'rule.css');
   const hljsSrc = resolver.resolve('styles', 'vs.css');
   const hotspotSrc = resolver.resolve('styles', 'hotspot.css');
-  const severityImgSrc = resolver.resolve('images', 'severity', `${rule.severity.toLowerCase()}.png`);
-  const typeImgSrc = resolver.resolve('images', 'type', `${rule.type.toLowerCase()}.png`);
   const infoImgSrc = resolver.resolve('images', 'info.png');
 
   const ruleParamsHtml = renderRuleParams(rule);
@@ -73,18 +73,64 @@ function computeRuleDescPanelContent(
     <link rel="stylesheet" type="text/css" href="${hotspotSrc}" />
     <link rel="stylesheet" type="text/css" href="${hljsSrc}" />
     </head>
-    <body><h1><big>${escapeHtml(rule.name)}</big> (${rule.key})</h1>
-    <div>
-    <img class="type" alt="${rule.type}" src="${typeImgSrc}" />&nbsp;
-    ${clean(rule.type)}&nbsp;
-    <img class="severity" alt="${rule.severity}" src="${severityImgSrc}" />&nbsp;
-    ${clean(rule.severity)}
-    </div>
+    <body>
+    <h1><big>${escapeHtml(rule.name)}</big> (${rule.key})</h1>
+    ${renderTaxonomyInfo(rule, resolver)}
     ${taintBanner}
     ${hotspotBanner}
     ${ruleDescription}
     ${ruleParamsHtml}
     </body></html>`;
+}
+
+function renderCleanCodeAttribute(rule: ShowRuleDescriptionParams) {
+  const categoryLabel = escapeHtml(rule.cleanCodeAttributeCategory);
+  const attributeLabel = escapeHtml(rule.cleanCodeAttribute);
+  return `<div class="clean-code-attribute capsule" title="Clean Code attributes are characteristics code needs to have to be considered clean.">
+  <span class="attribute-category">${categoryLabel} issue</span>
+  <span class="attribute">${attributeLabel}</span>
+</div>`;
+}
+
+function renderImpact(softwareQuality: string, severity: string, resolver: ResourceResolver) {
+  const softwareQualityLowerCase = softwareQuality.toLocaleLowerCase('en-us');
+  const impactSeverityLowerCase = severity.toLocaleLowerCase('en-us');
+  const impactSeverityImgSrc = resolver.resolve('images', 'impact', `${impactSeverityLowerCase}.svg`);
+  const formattedImpact = `Issues found for this rule will have a ${impactSeverityLowerCase} impact on the ${softwareQualityLowerCase} of your software.`;
+    return `<div class="impact impact-${impactSeverityLowerCase} capsule" title="${formattedImpact}">
+  <span>${capitalize(softwareQualityLowerCase)}</span>
+  <img alt="${capitalize(impactSeverityLowerCase)}" src="${impactSeverityImgSrc}" />
+</div>`;
+}
+
+function renderTaxonomyInfo(rule: ShowRuleDescriptionParams, resolver: ResourceResolver) {
+  if (rule.impacts && Object.keys(rule.impacts).length > 0) {
+    // Clean Code taxonomy
+    const renderedImpacts = Object.entries(rule.impacts).map(([softwareQuality, severity]) => renderImpact(softwareQuality, severity, resolver));
+    return `<div class="taxonomy">
+  ${renderCleanCodeAttribute(rule)}
+  &nbsp;
+  ${renderedImpacts.join('&nbsp;')}
+  &nbsp;
+  <a href="${SonarLintDocumentation.CLEAN_CODE_CONCEPTS}" class="capsule"
+    title="Check out the Clean Code concepts in the SonarLint documentation"
+    rel="external glossary" target="_blank" referrerpolicy="no-referrer">What is clean code?</a>
+</div>`;
+  } else {
+    // Old type + severity taxonomy
+    const severityImgSrc = resolver.resolve('images', 'severity', `${rule.severity.toLowerCase()}.png`);
+    const typeImgSrc = resolver.resolve('images', 'type', `${rule.type.toLowerCase()}.png`);
+    return `<div class="taxonomy">
+  <div class="impact capsule">
+    ${clean(rule.type)}
+    <img alt="${rule.type}" src="${typeImgSrc}" />
+  </div>
+  <div class="impact capsule">
+    ${clean(rule.severity)}
+    <img alt="${rule.severity}" src="${severityImgSrc}" />
+  </div>
+</div>`;
+  }
 }
 
 export function renderTaintBanner(rule: ShowRuleDescriptionParams, infoImgSrc: string) {

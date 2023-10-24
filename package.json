@@ -1,8 +1,8 @@
 {
   "name": "sonarlint-vscode",
   "displayName": "SonarLint",
-  "description": "Detects and helps fix issues in your JS/TS, Python, PHP, Java, C, C++, Go and IaC code locally in your IDE. Use with SonarQube & SonarCloud for optimal team performance.",
-  "version": "3.20.0-SNAPSHOT",
+  "description": "Linter to detect & fix coding issues locally in JS/TS, Python, PHP, Java, C, C++, Go, IaC. Use with SonarQube & SonarCloud for optimal team performance.",
+  "version": "3.23.0-SNAPSHOT",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "SonarSource",
   "homepage": "https://www.sonarsource.com/products/sonarlint/",
@@ -35,6 +35,9 @@
   "activationEvents": [
     "onStartupFinished"
   ],
+  "capabilities": {
+    "virtualWorkspaces": false
+  },
   "contributes": {
     "configuration": {
       "type": "object",
@@ -102,7 +105,7 @@
           "type": "array",
           "scope": "application",
           "default": [],
-          "markdownDescription": "In connected mode, SonarLint applies the SonarQube quality profile to the local analysis and synchronizes the issue status and other analysis settings. Please find the documentation [here](https://github.com/SonarSource/sonarlint-vscode/wiki/Connected-Mode)",
+          "markdownDescription": "In connected mode, SonarLint applies the SonarQube quality profile to the local analysis and synchronizes the issue status and other analysis settings. Please find the documentation [here](https://docs.sonarsource.com/sonarlint/vs-code/team-features/connected-mode/)",
           "items": {
             "type": "object",
             "properties": {
@@ -144,7 +147,7 @@
           "type": "array",
           "scope": "application",
           "default": [],
-          "markdownDescription": "In connected mode, SonarLint applies the SonarQube quality profile to the local analysis and synchronizes the issue status and other analysis settings. Please find the documentation [here](https://github.com/SonarSource/sonarlint-vscode/wiki/Connected-Mode)",
+          "markdownDescription": "In connected mode, SonarLint applies the SonarQube quality profile to the local analysis and synchronizes the issue status and other analysis settings. Please find the documentation [here](https://docs.sonarsource.com/sonarlint/vs-code/team-features/connected-mode/)",
           "items": {
             "type": "object",
             "properties": {
@@ -250,7 +253,14 @@
           "order": 12,
           "type": "string",
           "default": "",
-          "markdownDescription": "Files whose name match this [glob pattern](https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob) are considered as test files by analyzers. Most rules are *not* evaluated on test files. Example: `{**/test/**,**/*test*,**/*Test*}`",
+          "markdownDescription": "Files whose name match this [glob pattern](https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob) are considered as test files by analyzers. Most rules are *not* evaluated on test files. Example: `**/test/**,**/*test*,**/*Test*`",
+          "scope": "resource"
+        },
+        "sonarlint.analysisExcludesStandalone": {
+          "order": 13,
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Files whose name match this [glob pattern](https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob) will not be processed by analyzers. When SonarLint is connected to SonarQube or SonarCloud this property will be ignored and server exclusion settings will be applied. No rules are evaluated on excluded files. Example: `**/lib/**,**/*generated*`",
           "scope": "resource"
         },
         "sonarlint.ls.javaHome": {
@@ -338,6 +348,13 @@
           "default": false,
           "markdownDescription": "Disable sending anonymous usage statistics to SonarSource. Click [here](https://github.com/SonarSource/sonarlint-vscode/blob/master/telemetry-sample.md) to see a sample of the data that are collected.",
           "scope": "window"
+        },
+        "sonarlint.focusOnNewCode": {
+          "order": 100,
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Set SonarLint focus to new code. [Learn how](https://docs.sonarsource.com/sonarlint/vs-code/using-sonarlint/investigating-issues/#focusing-on-new-code) to deliver clean code with Clean as You Code.",
+          "scope": "window"
         }
       }
     },
@@ -351,6 +368,16 @@
       {
         "command": "SonarLint.ShowSonarLintOutput",
         "title": "Show SonarLint Output",
+        "category": "SonarLint"
+      },
+      {
+        "command": "SonarLint.ReopenLocalIssues",
+        "title": "Reopen Local Issues for current file",
+        "category": "SonarLint"
+      },
+      {
+        "command": "SonarLint.AnalyseOpenFile",
+        "title": "Analyse current file ignoring excludes",
         "category": "SonarLint"
       },
       {
@@ -508,6 +535,11 @@
         "command": "SonarLint.HelpAndFeedbackLinkClicked",
         "title": "Share feedback",
         "category": "SonarLint"
+      },
+      {
+        "command": "SonarLint.EnableVerboseLogs",
+        "title": "Enable Verbose Logging",
+        "category": "SonarLint"
       }
     ],
     "viewsContainers": {
@@ -556,7 +588,60 @@
       },
       {
         "view": "SonarLint.SecurityHotspots",
-        "contents": "Please ensure a connection to SonarQube 9.7+ or SonarCloud is set up. Detected Security Hotspots will be displayed here. [Learn More](https://github.com/SonarSource/sonarlint-vscode/wiki/security-hotspots).\n Using the In Whole Folder feature may consume excessive resources depending on the size of your project. Please check the [documentation](https://github.com/SonarSource/sonarlint-vscode/wiki/security-hotspots#reporting-security-hotspots-in-the-whole-folder) for recommendations to minimize the impact of a full project analysis."
+        "contents": "Please ensure a connection to SonarQube 9.7+ or SonarCloud is set up. Detected Security Hotspots will be displayed here. [Learn More](https://docs.sonarsource.com/sonarlint/vs-code/using-sonarlint/security-hotspots).\n Using the In Whole Folder feature may consume excessive resources depending on the size of your project. Please check the [documentation](https://docs.sonarsource.com/sonarlint/vs-code/using-sonarlint/security-hotspots/#reporting-security-hotspots-in-the-whole-folder) for recommendations to minimize the impact of a full project analysis."
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "SonarLint.walkthrough",
+        "title": "Welcome to SonarLint!",
+        "description": "Your Clean Code journey starts here.",
+        "steps": [
+          {
+            "id": "SonarLint.inAction",
+            "title": "$(rocket) New to SonarLint? See it in action",
+            "description": "SonarLint for VSCode supports analysis of 15+ languages including JS/TS, Java, Python, CSS/HTML, C, C++, and [more](https://docs.sonarsource.com/sonarlint/vs-code/using-sonarlint/rules). SonarLint detects issues in all files **open** in the editor.\n\nThe best way to get started is to see it in action!\n[Open Sample File](command:SonarLint.OpenSample)",
+            "media": {
+              "markdown": "walkthrough/empty.md"
+            },
+            "completionEvents": [
+              "onView:workbench.panel.markers.view"
+            ]
+          },
+          {
+            "id": "SonarLint.learnMoreAboutIssues",
+            "title": "$(book) Learn more about issues",
+            "description": "Check the [Problems view](command:workbench.panel.markers.view.focus): SonarLint has found something $(warning).\nRight-click on the issue found by SonarLint.\nOpen the rule description: SonarLint clearly explains why this is an issue.\nFor certain rules and issues, SonarLint will suggest available Quick Fixes.",
+            "media": {
+              "markdown": "walkthrough/empty.md"
+            },
+            "completionEvents": [
+              "onCommand:SonarLint.OpenStandaloneRuleDesc"
+            ]
+          },
+          {
+            "id": "SonarLint.connectedModeIntro",
+            "title": "$(link) Connect with your team",
+            "description": "Use the same Clean Code standards as your team by using SonarLint in Connected Mode with [SonarQube](https://www.sonarsource.com/products/sonarqube/) or [SonarCloud](https://www.sonarsource.com/products/sonarcloud/).\n**Already using SonarQube or SonarCloud?** Check out the Connected Mode view to set up the connection.\n[Set up Connection](command:SonarLint.ConnectedMode.focus)",
+            "media": {
+              "markdown": "walkthrough/empty.md"
+            },
+            "completionEvents": [
+              "onView:SonarLint.ConnectedMode"
+            ]
+          },
+          {
+            "id": "SonarLint.reachOut",
+            "title": "$(comment-discussion) Share feedback or ask for help",
+            "description": "You suspect your code has issues but don't see any problems detected by SonarLint? [Enable verbose logging](command:SonarLint.EnableVerboseLogs) and check the output in the SonarLint Output window\n[Check Output](command:SonarLint.ShowSonarLintOutput)\n\nYou'd like to learn more about SonarLint, or give us feedback? Check out the [Help and Feedback view](command:SonarLint.HelpAndFeedback.focus)\n\n",
+            "media": {
+              "markdown": "walkthrough/empty.md"
+            },
+            "completionEvents": [
+              "onView:SonarLint.HelpAndFeedback"
+            ]
+          }
+        ]
       }
     ],
     "menus": {
@@ -772,7 +857,11 @@
     "test-cov": "node out/test/runTest.js --coverage",
     "prepare": "node scripts/prepare.mjs",
     "cyclonedx-run": "cyclonedx-node",
-    "cyclonedx": "gulp cycloneDx"
+    "cyclonedx": "node build-sonarlint/sbomGeneration.mjs",
+    "deploy-all": "node build-sonarlint/deployAll.mjs",
+    "deploy-universal": "node build-sonarlint/deploy.mjs",
+    "package": "node build-sonarlint/package.mjs",
+    "package-all": "node build-sonarlint/package-all.mjs"
   },
   "dependencies": {
     "@vscode/webview-ui-toolkit": "1.0.0",
@@ -781,19 +870,24 @@
     "expand-home-dir": "0.0.3",
     "find-java-home": "1.2.2",
     "follow-redirects": "1.15.1",
+    "globby": "^13.2.2",
     "highlight.js": "^11.7.0",
     "inly": "4.0.8",
     "luxon": "^3.2.1",
+    "node-fetch": "^2.7.0",
     "node-html-parser": "^6.1.5",
     "path-exists": "4.0.0",
     "properties": "1.2.1",
+
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+
     "underscore": "^1.13.6",
-    "vscode-languageclient": "^8.0.2"
+    "vscode-languageclient": "^8.0.2",
+    "zlib": "^1.0.5"
   },
   "devDependencies": {
-    "@cyclonedx/bom": "^3.8.0",
+    "@cyclonedx/bom": "^4.0.3",
     "@types/chai": "^4.2.10",
     "@types/follow-redirects": "1.13.1",
     "@types/glob": "8.0.0",
@@ -802,41 +896,33 @@
     "@types/mocha": "10.0.0",
     "@types/node": "^10.17.17",
     "@types/vscode": "^1.73.1",
-    "@vscode/test-electron": "^2.3.0",
+    "@vscode/test-electron": "^2.3.4",
     "chai": "^4.2.0",
     "crypto": "^0.0.3",
     "dateformat": "^2.0.0",
     "del": "^2.2.2",
     "expect.js": "^0.3.1",
     "fancy-log": "1.3.3",
-    "fs-extra": "^10.1.0",
+    "fs-extra": "^11.1.1",
     "glob": "^8.0.3",
-    "gulp": "4.0.2",
-    "gulp-artifactory-upload": "^1.4.0",
-    "gulp-bump": "3.2.0",
-    "gulp-cli": "2.3.0",
-    "gulp-decompress": "^3.0.0",
-    "gulp-download": "^0.0.1",
-    "gulp-exec": "5.0.0",
-    "gulp-rename": "^1.4.0",
-    "istanbul-lib-coverage": "^2.0.5",
-    "istanbul-lib-instrument": "^3.3.0",
-    "istanbul-lib-report": "^2.0.8",
-    "istanbul-lib-source-maps": "^3.0.6",
-    "istanbul-reports": "^2.2.7",
+    "istanbul-lib-coverage": "^3.2.0",
+    "istanbul-lib-instrument": "^6.0.0",
+    "istanbul-lib-report": "^3.0.1",
+    "istanbul-lib-source-maps": "^4.0.1",
+    "istanbul-reports": "^3.1.6",
     "map-stream": "^0.1.0",
     "mocha": "10.1.0",
     "mocha-multi-reporters": "^1.5.1",
-    "openpgp": "^5.2.1",
+    "openpgp": "^5.10.1",
     "prettier": "2.0.5",
-    "sonarqube-scanner": "2.8.2",
+    "sonarqube-scanner": "^3.1.0",
     "stream": "^0.0.2",
     "through2": "^2.0.5",
-    "ts-loader": "9.4.1",
+    "ts-loader": "^9.4.4",
     "typescript": "^4.9.5",
     "vinyl": "^2.2.1",
     "vsce": "2.15.0",
-    "webpack": "5.76.0",
+    "webpack": "^5.88.2",
     "webpack-cli": "4.10.0"
   },
   "prettier": {

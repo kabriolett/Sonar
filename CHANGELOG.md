@@ -1,3 +1,47 @@
+## 3.22
+
+* Add possibility to exclude files from analysis when ***not*** in Connected Mode. [Learn more](https://docs.sonarsource.com/sonarlint/vs-code/using-sonarlint/file-exclusions)
+* Add focusing on new code in connected mode [Learn more](https://docs.sonarsource.com/sonarlint/vs-code/using-sonarlint/investigating-issues/#focusing-on-new-code)
+* Update JS/TS/CSS analyzer 10.5.1 -> [10.6.0](https://github.com/SonarSource/SonarJS/releases/tag/10.6.0.22520), FP fixes, QuickFix for S6326, remove S2814 for TypeScript, recommendation to use Node.js 20
+* Update CFamily analyzer 6.48 -> [6.49](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2014261%20ORDER%20BY%20created%20ASC), 2 new C++ MISRA 2023 rules
+* Update text and secrets analyzer 2.3.0 -> [2.4.0](https://github.com/SonarSource/sonar-text/releases/tag/2.4.0.2120) -> [2.5.0](https://github.com/SonarSource/sonar-text/releases/tag/2.5.0.2293), 42 new cloud app secrets, FP fixes, analysis time logging
+* Update Python analyzer 4.7 -> [4.8](https://sonarsource.atlassian.net/projects/SONARPY/versions/14270/tab/release-report-all-issues), 8 Numpy rules and 3 quick fixes, FN fixes
+* Update IaC analyzer 1.20 -> [1.21](https://github.com/SonarSource/sonar-iac/releases/tag/1.21.0.5999), 16 new rules for Docker analyzer, improved detection of Dockerfiles
+* Update Go analyzer 1.14 -> [1.15](https://sonarsource.atlassian.net/projects/SONARSLANG/versions/14258/tab/release-report-all-issues), enable "NOSONAR" commentary in SonarLint, bug fixes and improvements
+* Update Java analyzer 7.24 -> [7.25](https://github.com/SonarSource/sonar-java/releases/tag/7.25.0.32245), [Custom Rules] CheckRegistrar classes can register check instances, default quality profile and AutoScan
+
+## 3.21
+
+* Highlight clean code attributes and impacts on software qualities in rule descriptions
+* In connected mode with SonarQube 10.2+, add the ability to silence an issue before the analysis
+* Analysis of COBOL in connected mode with SonarCloud or SonarQube Enterprise Edition is now considered stable
+* Update Java analyzer 7.22 -> [7.23](https://github.com/SonarSource/sonar-java/releases/tag/7.23.0.32023) -> [7.24](https://github.com/SonarSource/sonar-java/releases/tag/7.24.0.32100), improvements and bug fixes
+* Update JS/TS/CSS analyzer 10.3.2 -> [10.4](https://github.com/SonarSource/SonarJS/releases/tag/10.4.0.22160) -> [10.5.1](https://github.com/SonarSource/SonarJS/releases/tag/10.5.1.22382), FP fixes, new JS/TS rules, support Clean Code attributes and software qualities
+* Update text and secrets analyzer 2.1 -> [2.2](https://github.com/SonarSource/sonar-text/releases/tag/2.2.0.1571) -> [2.3](https://github.com/SonarSource/sonar-text/releases/tag/2.3.0.1632), detection of top 50 cloud app secrets, 22 new secret types, reduced FP rate
+* Update XML analyzer 2.9 -> [2.10](https://github.com/SonarSource/sonar-xml/releases/tag/2.10.0.4108),  support Clean Code attributes and software qualities
+* Update IaC analyzer 1.18 -> [1.19](https://github.com/SonarSource/sonar-iac/releases/tag/1.19.0.5623) -> [1.20](https://github.com/SonarSource/sonar-iac/releases/tag/1.20.0.5654), support Clean Code attributes and software qualities, bugfixes
+* Update Go analyzer 1.13 -> [1.14](https://sonarsource.atlassian.net/projects/SONARSLANG/versions/14154/tab/release-report-all-issues), support Clean Code attributes and software qualities
+* Update PHP analyzer 3.30 -> [3.31](https://github.com/SonarSource/sonar-php/releases/tag/3.31.0.9993) -> [3.32](https://github.com/SonarSource/sonar-php/releases/tag/3.32.0.10180), support PHP 8.3, 16 FP fixes, bugfixes, support Clean Code attributes and software qualities
+* Update Python analyzer 4.5 -> [4.6](https://sonarsource.atlassian.net/projects/SONARPY/versions/14215/tab/release-report-all-issues) -> [4.7](https://sonarsource.atlassian.net/projects/SONARPY/versions/14230/tab/release-report-all-issues), support Clean Code attributes and software qualities, 9 new rules, FP fixes
+* Update HTML analyzer 3.7.1 -> [3.8](https://github.com/SonarSource/sonar-html/releases/tag/3.8.0.3510) -> [3.9](https://github.com/SonarSource/sonar-html/releases/tag/3.9.0.3600), support Clean Code attributes and software qualities, new rule description format
+* Update CFamily analyzer 6.47 -> [6.48](https://sonarsource.atlassian.net/issues/?jql=project%20%3D%2010166%20AND%20fixVersion%3D14218%20ORDER%20BY%20priority%20DESC%2C%20key%20ASC), support Clean Code attributes and software qualities, new rule description format
+
+## 3.20.2
+
+* Contribute a walkthrough feature for new users who install SonarLint
+* Clean up diagnostics on file close
+* Improve UX for untrusted SSL certificates
+* Update Java analyzer 7.20.0 -> [7.21.0](https://github.com/SonarSource/sonar-java/releases/tag/7.21.0.31796) -> [7.22.0](https://github.com/SonarSource/sonar-java/releases/tag/7.22.0.31918), Update 136 rule descriptions to new educational format; Fix 6 FPs
+* Update IaC analyzer 1.17 -> [1.18](https://github.com/SonarSource/sonar-iac/releases/tag/1.18.0.4757), Update rule descriptions to new educational format; Bug fixes
+* Update Python analyzer 4.3 -> [4.4](https://sonarsource.atlassian.net/projects/SONARPY/versions/14133/tab/release-report-all-issues) -> [4.5](https://sonarsource.atlassian.net/projects/SONARPY/versions/14193/tab/release-report-all-issues), Migrate 37 rule descriptions to the education format; Improve analysis precision; Fixing FPs and FNs
+* Update XML analyzer 2.8.1 -> [2.9.0](https://github.com/SonarSource/sonar-xml/releases/tag/2.9.0.4055), Update rules metadata; SonarXML increases by 2% the TPR on C# SAST Benchmarks; Fixing FNs
+* Update JS/TS/CSS analyzer 10.3.1 -> [10.3.2](https://github.com/SonarSource/SonarJS/releases/tag/10.3.2.22047), A bugfix for performance regression
+* Update CFamily analyzer 6.45 -> [6.46](https://sonarsource.atlassian.net/issues/?jql=project%20%3D%2010166%20AND%20fixVersion%3D14141%20ORDER%20BY%20priority%20DESC%2C%20key%20ASC) -> [6.47](https://sonarsource.atlassian.net/issues/?jql=project%20%3D%2010166%20AND%20fixVersion%3D%206.47%20%20ORDER%20BY%20priority%20DESC%2C%20key%20ASC), 2 new C++ rules, 43 new Misra 2023 rules; Bug fixes and improvements
+
+## 3.19.2
+
+* Fix synchronization of taint vulnerabilities in connected mode with SonarCloud
+
 ## 3.19
 
 * Allow marking known issues and taint vulnerabilities as resolved in Connected Mode
@@ -57,7 +101,7 @@
 
 ## 3.14
 
-* Local detection of [Security Hotspots](https://github.com/SonarSource/sonarlint-vscode/wiki/security-hotspots)
+* Local detection of [Security Hotspots](https://docs.sonarsource.com/sonarlint/vs-code/using-sonarlint/security-hotspots/)
 * Update PHP analyzer 3.25.0 -> [3.26.0](https://github.com/SonarSource/sonar-php/releases/tag/3.26.0.9313) -> [3.27.0](https://github.com/SonarSource/sonar-php/releases/tag/3.27.0.9339) -> [3.27.1](https://github.com/SonarSource/sonar-php/releases/tag/3.27.1.9352), Fix parsing error on namespaces with reserved words
 * Update CFamily analyzer 6.40.0 -> [6.41.0](https://sonarsource.atlassian.net/issues/?jql=project%20%3D%2010166%20AND%20fixVersion%20%3D%2013953%20ORDER%20BY%20priority%20DESC%2C%20key%20ASC), 13 new rules on C++20's "std::format"
 * Update Java analyzer 7.15.0 -> [7.16.0](https://sonarsource.atlassian.net/projects/SONARJAVA/versions/13922/tab/release-report-all-issues), FP fixes, bugfixes, FN fixes
