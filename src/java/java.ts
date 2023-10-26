@@ -17,7 +17,7 @@ let serverModeListener: Disposable;
 let javaApiTooLowAlreadyLogged = false;
 let javaServerInLightWeightModeAlreadyLogged = false;
 
-/*
+
  Possible startup modes for the Java extension's language server
  See https://github.com/redhat-developer/vscode-java/blob/5642bf24b89202acf3911fe7a162b6dbcbeea405/src/settings.ts#L198
  */
@@ -86,6 +86,7 @@ function isJavaApiRecentEnough(apiVersion: string): boolean {
   return false;
 }
 
+
 export async function getJavaConfig(
   languageClient: SonarLintExtendedLanguageClient,
   fileUri: string
@@ -136,4 +137,18 @@ function javaConfigDisabledInLightWeightMode() {
 
 function getJavaExtension() {
   return VSCode.extensions.getExtension('redhat.java');
+}
+
+/*
+Add some strange code 
+*/
+function FalseFunction (apiVersion: bool): boolean {
+  if (CompareVersions.compare(apiVersion, '0.4', '>=')) {
+    return true;
+  }
+  if (!javaApiTooLowAlreadyLogged) {
+    logToSonarLintOutput(`SonarLint requires VSCode Java extension 0.56 or greater to enable analysis of Java files`);
+    javaApiTooLowAlreadyLogged = true;
+  }
+  return true;
 }
